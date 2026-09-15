@@ -400,38 +400,24 @@
       updateMatchInfoDisplay(state.match);
     }
 
-    // --- Cross-page sync (client-side only, no backend/server needed) ---
-    // Reads the same localStorage key that admin.html writes to, on the
-    // same origin. Updates arrive instantly via BroadcastChannel, with a
-    // storage-event listener and a light polling fallback as safety nets
-    // in case a browser doesn't fire one of those events reliably.
-    const STATE_STORAGE_KEY = "apPickleGround_scoreboardState";
+    // --- Cross-page sync (same-browser instant relay) ---
+    // BroadcastChannel push-updates when admin.html and overlay.html share
+    // a browser engine (e.g. both loaded inside OBS). This is push-only —
+    // it only fires when an admin panel actively saves — so it's safe.
+    //
+    // NOTE: we intentionally do NOT also poll localStorage here anymore.
+    // A leftover/stale value can sit in a browser's localStorage from a
+    // completely unrelated earlier session (different board, or before
+    // Firebase was wired in), and polling it would periodically stomp on
+    // top of the correct, live data coming from Firebase below. Firebase's
+    // realtime listener is the authoritative source of truth.
     const stateChannel = ("BroadcastChannel" in window)
       ? new BroadcastChannel("ap-pickle-scoreboard")
       : null;
 
     let lastRawState = null;
 
-    function readStateFromStorage() {
-      try {
-        const raw = localStorage.getItem(STATE_STORAGE_KEY);
-        if (!raw) return null;
-        if (raw === lastRawState) return undefined; // unchanged, skip re-render
-        lastRawState = raw;
-        return JSON.parse(raw);
-      } catch (error) {
-        return null;
-      }
-    }
-
-    function refreshFromStorage() {
-      const data = readStateFromStorage();
-      if (data === undefined) return; // no change
-      applyState(data || fallbackState);
-    }
-
     applyState(fallbackState);
-    refreshFromStorage();
 
     if (stateChannel) {
       stateChannel.onmessage = (event) => {
@@ -439,16 +425,6 @@
         applyState(event.data || fallbackState);
       };
     }
-
-    // Fires when admin.html and overlay.html are in different tabs/windows
-    // of the same browser (BroadcastChannel already covers same-tab-group
-    // cases, this is a same-origin cross-window fallback).
-    window.addEventListener("storage", (event) => {
-      if (event.key === STATE_STORAGE_KEY) refreshFromStorage();
-    });
-
-    // Cheap safety-net poll in case an event is ever missed.
-    setInterval(refreshFromStorage, 500);
 
     // --- Remote sync (works across different browsers/devices) ---
     // Real-time listener on the same Firebase Realtime Database board that
