@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AP Pickle Ground - OBS Overlay</title>
+  <title>ATP Pickle Ground - OBS Overlay</title>
   <style>
     * {
       margin: 0;
@@ -175,7 +175,7 @@
     <div class="team-card" id="team1Card">
       <div class="preview-logo" id="previewLogoWrap1">
         <div id="logo1Fallback" class="fallback">
-          <div class="ap">AP</div>
+          <div class="ap">ATP</div>
           <div class="sub">PICKLE<br>GROUND</div>
         </div>
         <img id="logo1Image" class="team-logo-img" alt="Team 1 Logo">
@@ -194,7 +194,7 @@
     <div class="team-card" id="team2Card">
       <div class="preview-logo" id="previewLogoWrap2">
         <div id="logo2Fallback" class="fallback">
-          <div class="ap">AP</div>
+          <div class="ap">ATP</div>
           <div class="sub">PICKLE<br>GROUND</div>
         </div>
         <img id="logo2Image" class="team-logo-img" alt="Team 2 Logo">
@@ -445,6 +445,51 @@
 
     // Cheap safety-net poll in case an event is ever missed.
     setInterval(refreshFromStorage, 500);
+
+    // --- Remote sync (works across different browsers/devices) ---
+    // Real-time listener on the same Firebase Realtime Database board that
+    // admin.html writes to. The board id must be in this page's URL as
+    // "?board=<id>" — that link is generated for you by admin.html once it
+    // creates or connects to a board. This is what lets the overlay update
+    // even when it's opened in a totally different browser than the control
+    // panel (e.g. OBS's Browser Source vs. your regular Chrome on another PC).
+    //
+    // >>> REQUIRED: same Firebase project config as admin.html <<<
+    const firebaseConfig = {
+      apiKey: "AIzaSyCxyVuKSJG1Jx61EtzuhfVkJ7qXLXooLQs",
+      authDomain: "pickleball-scoresheet-gjgg.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com", // TODO: paste your real databaseURL here
+      projectId: "pickleball-scoresheet-gjgg"
+    };
+
+    const boardId = new URLSearchParams(location.search).get("board");
+
+    if (!boardId) {
+      console.warn(
+        "No ?board= id in this URL, so this overlay can only sync with a " +
+        "control panel running in the exact same browser. Open the overlay " +
+        "link shown in admin.html instead for cross-browser sync."
+      );
+    } else {
+      firebase.initializeApp(firebaseConfig);
+      const fbAuth = firebase.auth();
+      const fbDb = firebase.database();
+
+      fbAuth.onAuthStateChanged((user) => {
+        if (!user) return;
+        fbDb.ref("boards/" + boardId).on("value", (snapshot) => {
+          const data = snapshot.val();
+          lastRawState = JSON.stringify(data); // keep the local-sync dedupe in step too
+          applyState(data || fallbackState);
+        }, (error) => {
+          console.error("Firebase read failed (check database rules):", error);
+        });
+      });
+
+      fbAuth.signInAnonymously().catch((err) => {
+        console.error("Firebase sign-in failed (check firebaseConfig / Anonymous auth is enabled):", err);
+      });
+    }
   </script>
 </body>
 </html>
