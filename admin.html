@@ -1229,9 +1229,9 @@
       previewPlayers.textContent = playersInput.value.trim() || '';
       updateScoreTitles();
 		  
-	state[`team${team}`].name = teamName;
-	state[`team${team}`].players = playersInput.value.trim();
-	saveState();
+      state[`team${team}`].name = nameInput.value.trim();
+      state[`team${team}`].players = playersInput.value.trim();
+      saveState();
 	  
     }
 
@@ -1463,6 +1463,8 @@
     function applyOverlayWidth(width) {
       const preview = document.getElementById('livePreviewBox');
       preview.style.maxWidth = width + 'px';
+      state.settings.width = Number(width);
+      saveState();
     }
 
     function syncOverlayWidthFromRange() {
@@ -1490,8 +1492,10 @@
       const input = document.getElementById('sharedOpacityInput');
       input.value = range.value;
       updateRangeFill(range);
+      state.settings.opacity = Number(range.value);
       setTeamCardStyle(1);
       setTeamCardStyle(2);
+      saveState();
     }
 
     function syncSharedOpacityFromInput() {
@@ -1503,8 +1507,10 @@
       input.value = val;
       range.value = val;
       updateRangeFill(range);
+      state.settings.opacity = val;
       setTeamCardStyle(1);
       setTeamCardStyle(2);
+      saveState();
     }
 
     function syncLogoSizeFromRange() {
@@ -1544,6 +1550,9 @@
       document.querySelectorAll('.preview-logo .sub').forEach(el => {
         el.style.fontSize = Math.max(7, size * 0.11) + 'px';
       });
+
+      state.settings.logoSize = Number(size);
+      saveState();
     }
 
     function adj(id, change) {
