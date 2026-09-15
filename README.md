@@ -7,18 +7,33 @@ Two static pages, no backend/server required:
 
 ## How the sync works
 
-The old version called a `/data` endpoint on a local server that doesn't exist
-in a static GitHub Pages site. That's been replaced with a **client-side-only**
-sync: `admin.html` writes the current state to `localStorage` and broadcasts
-it instantly over the `BroadcastChannel` API; `overlay.html` listens for that
-broadcast (plus a `storage` event and a light poll as safety nets) and
-re-renders.
+Two layers, both automatic:
 
-**This only works when both pages are loaded from the same origin inside the
-same browser engine.** In practice, that means: don't open the admin panel in
-your everyday Chrome and expect it to reach an overlay loaded inside OBS —
-OBS's browser source runs its own separate embedded browser, with its own
-separate storage. See setup below for the correct way to do this.
+1. **Local layer** (instant): `localStorage` + `BroadcastChannel`. Only
+   works when both pages share a browser engine (e.g. both loaded inside
+   OBS). Kept because it's free and instant when it applies.
+2. **Remote layer** (cross-browser/cross-device): the very first time you
+   open `admin.html`, it creates a free, anonymous JSON "board" on
+   [jsonblob.com](https://jsonblob.com) and puts that board's id into its
+   own URL as `?blob=<id>`. It then shows you two links:
+   - **Overlay link** — paste this exact link into OBS's Browser Source.
+   - **Admin link** — bookmark/reuse this exact link to control this same
+     board from any other browser, tab, or device.
+
+   `overlay.html` reads the `?blob=` id from its own URL and polls that
+   board roughly every 1.5 seconds, so it updates no matter which browser
+   opened it.
+
+**Important:** the board id lives in the *URL*, not just local storage. If
+you open a bare `admin.html` link (no `?blob=`) from a browser that's never
+visited this board before, it will create a brand-new, separate board. Always
+use the exact links `admin.html` generates for you (bookmark them) rather
+than retyping the plain URL.
+
+No account or API key is needed. Since it's a public, anonymous blob store,
+technically anyone with your exact `?blob=` link could read or overwrite it —
+fine for a casual local match, but don't treat it as private/secure. jsonblob
+also removes boards that go unused for 75 days.
 
 ## 1. Publish to GitHub Pages
 
@@ -32,46 +47,55 @@ separate storage. See setup below for the correct way to do this.
    - `https://yourusername.github.io/your-repo-name/admin.html`
    - `https://yourusername.github.io/your-repo-name/overlay.html`
 
-## 2. Wire it into OBS (same browser engine = sync works)
+## 2. First run: pick a court
+
+1. Open `admin.html` (your GitHub Pages link) once, in any browser.
+2. Near the top of the page, click **Court 1** (through **Court 4**) to pick
+   which scoreboard you're running. Each is a fully independent board.
+3. The **Overlay link** and **Admin link** fields update to include that
+   court's id (`?board=court1`, etc). Copy both somewhere safe.
+4. To run a second/third/fourth court, just click that court's button (or
+   open `admin.html?board=court2` directly) — its own links appear the
+   same way.
+
+## 3. Wire it into OBS
 
 **Overlay (Browser Source):**
 1. In OBS, add a new **Browser Source**.
-2. URL: your `overlay.html` GitHub Pages link.
+2. URL: the **Overlay link** from step 2 (not the bare `overlay.html` URL).
 3. Width/height: e.g. 1920×200 (it has a transparent background).
-4. Check **"Refresh browser when scene becomes active"** (optional, harmless).
 
-**Control panel (Custom Browser Dock — this is the key step):**
-1. In OBS menu: **View → Docks → Custom Browser Docks…**
-2. Give it a name (e.g. "Scoreboard Control") and paste your `admin.html`
-   GitHub Pages link.
-3. Click Apply/Close — a new dock appears inside OBS that you can drag
-   anywhere in the OBS window, or pop out as its own window.
+**Control panel** — either works, pick what's convenient:
+- **From any regular browser, anywhere**: just open the **Admin link** from
+  step 2. Since sync goes through jsonblob now, it doesn't need to share a
+  browser engine with OBS.
+- **Inside OBS as a dock** (optional, if you'd rather keep it all in one
+  window): **View → Docks → Custom Browser Docks…**, paste the Admin link.
 
-Because both the overlay's Browser Source and the admin dock are rendered by
-OBS's own embedded browser (not your regular Chrome), they share the same
-`localStorage`/`BroadcastChannel` origin, so updates in the dock hit the
-overlay instantly.
+Avoid having the Admin link open in two places at once controlling the same
+board — each save overwrites the board with its own full state, so the last
+one to save wins and can clobber the other's edits.
 
-If you'd rather run the control panel outside OBS (e.g. on a second monitor
-in real Chrome) while the overlay is inside OBS, you'll need a real backend
-(Firebase Realtime DB, a small WebSocket relay, etc.) to bridge the two
-processes — the localStorage approach can't cross that boundary. Say the
-word if you want that version instead.
+## 4. Test it without OBS
 
-## 3. Test it without OBS
-
-Just open `admin.html` and `overlay.html` as two tabs in the same regular
-browser (e.g. two Chrome tabs pointed at your GitHub Pages URLs) — the sync
-works the same way there, so you can sanity-check everything before wiring
-it into OBS.
+Open the Admin link and Overlay link as two tabs in any regular browser —
+same sync path OBS uses, so you can sanity-check everything first. Remote
+updates land within ~1.5 seconds (polling), same-browser tabs update
+instantly.
 
 ## Notes / limits
 
-- Team logos are stored as base64 in `localStorage`, which has roughly a
-  5MB-per-origin budget shared across both team logos and the rest of the
-  state — fine for typical small PNG/SVG logos, but avoid huge source images.
-- State persists across reloads (the admin dock remembers your last match
-  when OBS restarts).
-- Fixed a pre-existing bug in the serve-indicator logic (`setService`) where
-  a function parameter was accidentally shadowing the shared `state` object,
-  which would have silently broken saving the serve indicator.
+- Team logos are stored as base64. They ride along in every save to
+  jsonblob and in `localStorage` (~5MB/origin budget) — fine for typical
+  small PNG/SVG logos, but avoid huge source images or you may hit size
+  limits or slow saves.
+- The remote board is anonymous and unauthenticated — anyone with your
+  exact `?blob=` link can read or write it. Fine for a casual local match;
+  don't rely on it for anything sensitive.
+- jsonblob removes boards untouched for 75 days.
+- If jsonblob is briefly unreachable, the status line under the links says
+  so and local/same-browser sync keeps working; it retries on your next change.
+- Fixed pre-existing bugs where team name/players, overlay width, opacity,
+  and logo size updated the admin's own preview but never actually saved to
+  state (so they silently failed to reach the overlay) — and a serve-indicator
+  bug where a function parameter shadowed the shared `state` object.
