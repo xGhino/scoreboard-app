@@ -827,6 +827,52 @@
         </section>
 
         <section class="section">
+          <div class="section-title">TEXT SIZE</div>
+          <div class="field">
+            <label class="label">Team Name</label>
+            <div class="row-3">
+              <input id="teamNameFontSizeInput" class="mini-input" value="25" oninput="syncTeamNameFontSizeFromInput()" />
+              <span class="suffix">px</span>
+            </div>
+            <div class="range-wrap">
+              <input id="teamNameFontSizeRange" type="range" min="12" max="48" value="25" oninput="syncTeamNameFontSizeFromRange()" />
+              <div class="range-minmax">
+                <span>12</span>
+                <span>48</span>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">Team Players</label>
+            <div class="row-3">
+              <input id="teamPlayersFontSizeInput" class="mini-input" value="16" oninput="syncTeamPlayersFontSizeFromInput()" />
+              <span class="suffix">px</span>
+            </div>
+            <div class="range-wrap">
+              <input id="teamPlayersFontSizeRange" type="range" min="8" max="32" value="16" oninput="syncTeamPlayersFontSizeFromRange()" />
+              <div class="range-minmax">
+                <span>8</span>
+                <span>32</span>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">Court / Division / Bracket line</label>
+            <div class="row-3">
+              <input id="matchInfoFontSizeInput" class="mini-input" value="14" oninput="syncMatchInfoFontSizeFromInput()" />
+              <span class="suffix">px</span>
+            </div>
+            <div class="range-wrap">
+              <input id="matchInfoFontSizeRange" type="range" min="8" max="28" value="14" oninput="syncMatchInfoFontSizeFromRange()" />
+              <div class="range-minmax">
+                <span>8</span>
+                <span>28</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
           <div class="section-title">MATCH INFORMATION</div>
 
           <div class="field">
@@ -1137,7 +1183,10 @@
 		settings: {
 			width: 1400,
 			opacity: 85,
-			logoSize: 80
+			logoSize: 80,
+			teamNameFontSize: 25,
+			teamPlayersFontSize: 16,
+			matchInfoFontSize: 14
 		},
 		service: 2
 	};  
@@ -1308,6 +1357,9 @@
       applyOverlayWidth(state.settings.width);
       updateMatchInfoDisplay();
       applyLogoSize(state.settings.logoSize);
+      applyTeamNameFontSize(state.settings.teamNameFontSize);
+      applyTeamPlayersFontSize(state.settings.teamPlayersFontSize);
+      applyMatchInfoFontSize(state.settings.matchInfoFontSize);
       updateTeamText(1);
       updateTeamText(2);
       updateScoreTitles();
@@ -1382,6 +1434,12 @@
       document.getElementById('sharedOpacityRange').value = state.settings.opacity || 85;
       document.getElementById('logoSizeInput').value = state.settings.logoSize || 80;
       document.getElementById('logoSizeRange').value = state.settings.logoSize || 80;
+      document.getElementById('teamNameFontSizeInput').value = state.settings.teamNameFontSize || 25;
+      document.getElementById('teamNameFontSizeRange').value = state.settings.teamNameFontSize || 25;
+      document.getElementById('teamPlayersFontSizeInput').value = state.settings.teamPlayersFontSize || 16;
+      document.getElementById('teamPlayersFontSizeRange').value = state.settings.teamPlayersFontSize || 16;
+      document.getElementById('matchInfoFontSizeInput').value = state.settings.matchInfoFontSize || 14;
+      document.getElementById('matchInfoFontSizeRange').value = state.settings.matchInfoFontSize || 14;
 
       if (state.team1.logo) {
         const img1 = document.getElementById('logo1Image');
@@ -1771,6 +1829,89 @@
 
       state.settings.logoSize = Number(size);
       saveState();
+    }
+
+    function applyTeamNameFontSize(size) {
+      document.querySelectorAll('.team-main-name').forEach(el => {
+        el.style.fontSize = size + 'px';
+      });
+      state.settings.teamNameFontSize = Number(size);
+      saveState();
+    }
+
+    function syncTeamNameFontSizeFromRange() {
+      const range = document.getElementById('teamNameFontSizeRange');
+      const input = document.getElementById('teamNameFontSizeInput');
+      input.value = range.value;
+      updateRangeFill(range);
+      applyTeamNameFontSize(range.value);
+    }
+
+    function syncTeamNameFontSizeFromInput() {
+      const input = document.getElementById('teamNameFontSizeInput');
+      const range = document.getElementById('teamNameFontSizeRange');
+      let val = parseInt(input.value, 10) || 25;
+      if (val < 12) val = 12;
+      if (val > 48) val = 48;
+      input.value = val;
+      range.value = val;
+      updateRangeFill(range);
+      applyTeamNameFontSize(val);
+    }
+
+    function applyTeamPlayersFontSize(size) {
+      document.querySelectorAll('.team-sub-name').forEach(el => {
+        el.style.fontSize = size + 'px';
+      });
+      state.settings.teamPlayersFontSize = Number(size);
+      saveState();
+    }
+
+    function syncTeamPlayersFontSizeFromRange() {
+      const range = document.getElementById('teamPlayersFontSizeRange');
+      const input = document.getElementById('teamPlayersFontSizeInput');
+      input.value = range.value;
+      updateRangeFill(range);
+      applyTeamPlayersFontSize(range.value);
+    }
+
+    function syncTeamPlayersFontSizeFromInput() {
+      const input = document.getElementById('teamPlayersFontSizeInput');
+      const range = document.getElementById('teamPlayersFontSizeRange');
+      let val = parseInt(input.value, 10) || 16;
+      if (val < 8) val = 8;
+      if (val > 32) val = 32;
+      input.value = val;
+      range.value = val;
+      updateRangeFill(range);
+      applyTeamPlayersFontSize(val);
+    }
+
+    function applyMatchInfoFontSize(size) {
+      const el = document.getElementById('bottomMatchInfo');
+      if (el) el.style.fontSize = size + 'px';
+      state.settings.matchInfoFontSize = Number(size);
+      saveState();
+    }
+
+    function syncMatchInfoFontSizeFromRange() {
+      const range = document.getElementById('matchInfoFontSizeRange');
+      const input = document.getElementById('matchInfoFontSizeInput');
+      input.value = range.value;
+      updateRangeFill(range);
+      applyMatchInfoFontSize(range.value);
+    }
+
+    function syncMatchInfoFontSizeFromInput() {
+      const input = document.getElementById('matchInfoFontSizeInput');
+      const range = document.getElementById('matchInfoFontSizeRange');
+      let val = parseInt(input.value, 10) || 14;
+      if (val < 8) val = 8;
+      if (val > 28) val = 28;
+      input.value = val;
+      range.value = val;
+      updateRangeFill(range);
+      applyMatchInfoFontSize(val);
     }
 
     function adj(id, change) {
