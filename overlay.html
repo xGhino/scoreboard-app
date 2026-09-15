@@ -245,7 +245,10 @@
       settings: {
         width: 1400,
         opacity: 85,
-        logoSize: 80
+        logoSize: 80,
+        teamNameFontSize: 25,
+        teamPlayersFontSize: 16,
+        matchInfoFontSize: 14
       },
       service: 2
     };
@@ -387,6 +390,21 @@
       });
     }
 
+    function applyTextSizes(settings) {
+      const nameSize = Number(settings.teamNameFontSize) || 25;
+      const playersSize = Number(settings.teamPlayersFontSize) || 16;
+      const matchInfoSize = Number(settings.matchInfoFontSize) || 14;
+
+      document.querySelectorAll('.team-main-name').forEach(el => {
+        el.style.fontSize = nameSize + 'px';
+      });
+      document.querySelectorAll('.team-sub-name').forEach(el => {
+        el.style.fontSize = playersSize + 'px';
+      });
+      const matchInfoEl = document.getElementById('bottomMatchInfo');
+      if (matchInfoEl) matchInfoEl.style.fontSize = matchInfoSize + 'px';
+    }
+
     function applyState(data) {
       const state = mergeState(data);
       const width = Math.max(600, Math.min(2500, Number(state.settings.width) || 1400));
@@ -396,6 +414,7 @@
       applyTeam(1, state.team1, opacity);
       applyTeam(2, state.team2, opacity);
       applyLogoSize(state.settings.logoSize);
+      applyTextSizes(state.settings);
       updateServiceVisuals(state);
       updateMatchInfoDisplay(state.match);
     }
