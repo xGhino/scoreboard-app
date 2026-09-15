@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AP Pickle Ground - Scoreboard Control</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #020b16;
+      --panel: #07111d;
+      --border: #15283c;
+      --text: #ffffff;
+      --muted: #8fa6c6;
+      --muted-2: #61728d;
+      --pink: #ff2b78;
+      --pink-2: #ff4d8f;
+      --blue: #1f8fff;
+      --green: #25d366;
+      --shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+      --radius: 14px;
+      --control-width: 640px;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255, 43, 120, 0.06), transparent 20%),
+        linear-gradient(180deg, #010913 0%, #020b16 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: var(--control-width) minmax(0, 1fr);
+      align-items: start;
+      gap: 24px;
+      padding: 12px 18px 18px;
+      width: 100%;
+    }
+
+    .control-panel {
+      width: 100%;
+    }
+
+    .preview-panel {
+      width: 100%;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-self: start;
+      align-items: flex-start;
+      padding-top: 6px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-left: 2px;
+    }
+
+    .topbar h1 {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .brand-inline {
+      color: var(--pink);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      margin-top: 4px;
+    }
+
+    .version {
+      background: var(--pink);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 6px;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .section {
+      background: linear-gradient(180deg, rgba(5, 14, 25, 0.95), rgba(3, 11, 20, 0.98));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      color: var(--pink);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.9px;
+      margin-bottom: 14px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .label,
+    .label-small {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 7px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .row-3 {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .input,
+    .mini-input,
+    .color-text {
+      width: 100%;
+      background: #172436;
+      border: 1px solid #22354b;
+      color: #fff;
+      border-radius: 7px;
+      outline: none;
+    }
+
+    .input {
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+
+    .mini-input {
+      width: 72px;
+      padding: 10px 8px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .color-text {
+      padding: 9px 10px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+
+    .suffix {
+      color: var(--muted);
+      font-size: 12px;
+      min-width: 24px;
+    }
+
+    .range-wrap {
+      margin-top: 10px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: linear-gradient(to right, var(--blue) 0%, var(--blue) var(--percent, 50%), #ffffff var(--percent, 50%), #ffffff 100%);
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--blue);
+      border: none;
+    }
+
+    .range-minmax {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--muted-2);
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .team-box {
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 12px;
+      background: rgba(255,255,255,0.02);
+    }
+
+    .color-row {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .color-preview {
+      width: 34px;
+      height: 34px;
+      border-radius: 6px;
+      border: 1px solid #27415c;
+      cursor: pointer;
+      background: #fff;
+    }
+
+    .logo-upload {
+      width: 100%;
+      background: #111d2d;
+      border: 1px dashed #2b4761;
+      color: #dbe6f8;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .logo-name {
+      margin-top: 6px;
+      color: var(--muted-2);
+      font-size: 11px;
+      word-break: break-all;
+    }
+
+    .logo-row {
+      display: grid;
+      grid-template-columns: auto 70px auto 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .preset-btn {
+      background: #0f1a2a;
+      border: 1px solid #24364c;
+      color: #d7e6ff;
+      border-radius: 7px;
+      padding: 10px 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .preset-btn.active {
+      border-color: var(--pink);
+      color: #fff;
+    }
+
+    .preview-title {
+      color: var(--pink);
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .preview-title span {
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 12px;
+    }
+
+    .preview-box,
+    .service-box,
+    .score-box {
+      width: 100%;
+      background: linear-gradient(180deg, rgba(5, 14, 25, 0.95), rgba(3, 11, 20, 0.98));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .preview-box {
+      width: 100%;
+      max-width: 1400px;
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .team-card {
+      display: grid;
+      grid-template-columns: 96px 1fr auto 64px;
+      align-items: center;
+      gap: 16px;
+      min-height: 100px;
+      border: 1px solid rgba(255,255,255,0.22);
+      border-radius: 10px;
+      padding: 14px 18px;
+      overflow: hidden;
+    }
+
+    .team-card + .team-card {
+      margin-top: 10px;
+    }
+
+    .preview-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-right: 2px solid #ffffff;
+      padding-right: 14px;
+      min-height: 68px;
+      width: 96px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-logo .fallback {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .preview-logo .ap {
+      color: var(--pink-2);
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .preview-logo .sub {
+      color: var(--pink-2);
+      font-size: 9px;
+      letter-spacing: 2px;
+      margin-top: 4px;
+      line-height: 1.3;
+      text-align: center;
+    }
+
+    .team-logo-img {
+      display: none;
+      max-width: 100%;
+      max-height: 70px;
+      object-fit: contain;
+    }
+
+    .team-main-name {
+      font-size: 25px;
+      font-weight: 800;
+      line-height: 1.1;
+      text-transform: uppercase;
+    }
+
+    .team-sub-name {
+      font-size: 16px;
+      margin-top: 8px;
+    }
+
+    .serve-indicators {
+      display: flex;
+      gap: 18px;
+      padding: 0 10px;
+      min-width: 68px;
+      justify-content: center;
+      min-height: 24px;
+      align-items: center;
+    }
+
+    .serve-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .preview-score {
+      font-size: 60px;
+      font-weight: 800;
+      line-height: 1;
+      text-align: right;
+      min-width: 54px;
+    }
+
+    .bottom-match-info {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 8px 0;
+      font-size: 14px;
+      color: #e6eefc;
+      letter-spacing: 1.8px;
+      flex-wrap: wrap;
+    }
+
+    .bottom-match-info .separator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--pink-2);
+    }
+
+    .score-box {
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .score-main {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .score-team-title {
+      text-align: center;
+      color: var(--pink);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .score-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .score-btn,
+    .reset-btn,
+    .reset-all-btn {
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .score-btn {
+      width: 44px;
+      height: 44px;
+      border: 1px solid #25384e;
+      background: #111d2d;
+      color: #fff;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .score-display {
+      min-width: 72px;
+      height: 52px;
+      padding: 0 14px;
+      border-radius: 8px;
+      background: transparent;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .reset-btn {
+      border: 1px solid #25384e;
+      background: #111d2d;
+      color: #dbe6f8;
+      padding: 11px 16px;
+      font-size: 13px;
+    }
+
+    .reset-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+      min-width: 210px;
+    }
+
+    .reset-all-btn {
+      border: 1px solid rgba(255, 43, 120, 0.6);
+      background: rgba(255, 43, 120, 0.08);
+      color: #ff7baa;
+      padding: 13px 18px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .reset-caption {
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .service-box {
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    .service-top {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .service-status-card {
+      background: rgba(15, 24, 38, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-height: 126px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 16px;
+    }
+
+    .status-title {
+      color: var(--pink);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .status-team {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.1;
+      text-transform: uppercase;
+    }
+
+    .status-serve {
+      margin-top: 6px;
+      font-size: 14px;
+      color: #ffffff;
+    }
+
+    .status-dots {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 12px;
+      min-height: 20px;
+      align-items: center;
+    }
+
+    .status-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .service-right {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .next-service-btn {
+      width: 100%;
+      background: linear-gradient(90deg, #f14d88 0%, #ee5c97 100%);
+      border: none;
+      color: #fff;
+      border-radius: 8px;
+      padding: 16px 18px;
+      font-size: 22px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .service-cycle-box {
+      background: rgba(15, 24, 38, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      color: #dbe6f8;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .service-cycle-box small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .manual-title {
+      color: var(--pink);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .manual-title span {
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .service-options {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+
+    .service-option {
+      background: rgba(15, 24, 38, 0.6);
+      border: 1px solid #1d3045;
+      color: #dbe6f8;
+      border-radius: 8px;
+      padding: 14px 10px;
+      text-align: center;
+      cursor: pointer;
+      min-height: 82px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .service-option.active {
+      border-color: var(--pink);
+      box-shadow: inset 0 0 0 1px rgba(255, 43, 120, 0.22);
+    }
+
+    .mini-dots {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      min-height: 14px;
+    }
+
+    .mini-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ffffff;
+    }
+
+    .connection-status {
+      position: fixed;
+      left: 18px;
+      bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #75d98d;
+      font-size: 12px;
+      background: rgba(2, 10, 18, 0.82);
+      padding: 8px 12px;
+      border: 1px solid rgba(37, 211, 102, 0.15);
+      border-radius: 999px;
+    }
+
+    .connection-status .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    @media (max-width: 1450px) {
+      .main-content {
+        grid-template-columns: 540px minmax(0, 1fr);
+      }
+
+      .team-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .service-options {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .score-main {
+        grid-template-columns: 1fr;
+      }
+
+      .reset-center {
+        min-width: 100%;
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+
+      .connection-status {
+        left: 16px;
+      }
+
+      .service-top {
+        grid-template-columns: 1fr;
+      }
+
+      .team-card {
+        grid-template-columns: 96px 1fr;
+      }
+
+      .serve-indicators,
+      .preview-score {
+        grid-column: 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <main class="main-content">
+      <div class="control-panel">
+        <div class="topbar">
+          <div>
+            <h1>SCOREBOARD CONTROL</h1>
+            <div class="brand-inline">AP PICKLE GROUND</div>
+          </div>
+          <div class="version">V10</div>
+        </div>
+
+        <div class="top-actions">
+          <button class="reset-btn" onclick="resetAll()">Reset All</button>
+        </div>
+
+        <section class="section">
+          <div class="section-title">GENERAL SETTINGS</div>
+          <div class="field">
+            <label class="label">Live Preview Width</label>
+            <div class="row-3">
+              <input id="overlayWidthInput" class="mini-input" value="1400" oninput="syncOverlayWidthFromInput()" />
+              <span class="suffix">px</span>
+            </div>
+            <div class="range-wrap">
+              <input id="overlayWidthRange" type="range" min="600" max="2500" value="1400" oninput="syncOverlayWidthFromRange()" />
+              <div class="range-minmax">
+                <span>600</span>
+                <span>2500</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">MATCH INFORMATION</div>
+
+          <div class="field">
+            <label class="label">Court</label>
+            <input id="courtInput" class="input" value="COURT 1" oninput="updateMatchInfoDisplay()" />
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label class="label">Division</label>
+              <input id="divisionInput" class="input" value="MEN'S DOUBLES" oninput="updateMatchInfoDisplay()" />
+            </div>
+            <div class="field">
+              <label class="label">Bracket</label>
+              <input id="bracketInput" class="input" value="GROUP A" oninput="updateMatchInfoDisplay()" />
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">TEAM</div>
+
+          <div class="team-grid">
+            <div class="team-box">
+              <div class="section-title" style="font-size:11px; margin-bottom:12px;">TEAM 1</div>
+
+              <label class="label-small">Team Name</label>
+              <input id="team1NameInput" class="input" value="GABRIEL / CARLO" oninput="updateTeamText(1)" />
+
+              <label class="label-small" style="margin-top:10px;">Team Players Displayed</label>
+              <input id="team1PlayersInput" class="input" value="Gabriel Joseph / Carlo Antonio" oninput="updateTeamText(1)" />
+
+              <label class="label-small" style="margin-top:12px;">Background Color</label>
+              <div class="color-row">
+                <input id="team1ColorPicker" class="color-preview" type="color" value="#e5afb6" onchange="setTeamCardStyle(1)" />
+                <input id="team1ColorText" class="color-text" value="#E5AFB6" oninput="setTeamCardStyle(1, true)" />
+              </div>
+
+              <label class="label-small">Font Color</label>
+              <div class="color-row">
+                <input id="team1FontColorPicker" class="color-preview" type="color" value="#000000" onchange="setTeamCardStyle(1)" />
+                <input id="team1FontColorText" class="color-text" value="#000000" oninput="setTeamCardStyle(1, false, true)" />
+              </div>
+
+              <label class="label-small">Divider / Indicator Color</label>
+              <div class="color-row">
+                <input id="team1LineColorPicker" class="color-preview" type="color" value="#000000" onchange="setTeamCardStyle(1)" />
+                <input id="team1LineColorText" class="color-text" value="#000000" oninput="setTeamCardStyle(1, false, false, true)" />
+              </div>
+
+              <label class="label-small">Team 1 Logo</label>
+              <input id="team1LogoUpload" type="file" accept="image/*" class="logo-upload" onchange="handleLogoUpload(1, event)" />
+              <div id="team1LogoName" class="logo-name">No file selected</div>
+            </div>
+
+            <div class="team-box">
+              <div class="section-title" style="font-size:11px; margin-bottom:12px;">TEAM 2</div>
+
+              <label class="label-small">Team Name</label>
+              <input id="team2NameInput" class="input" value="JOHN / MARK" oninput="updateTeamText(2)" />
+
+              <label class="label-small" style="margin-top:10px;">Team Players Displayed</label>
+              <input id="team2PlayersInput" class="input" value="John Smith / Mark Davis" oninput="updateTeamText(2)" />
+
+              <label class="label-small" style="margin-top:12px;">Background Color</label>
+              <div class="color-row">
+                <input id="team2ColorPicker" class="color-preview" type="color" value="#595963" onchange="setTeamCardStyle(2)" />
+                <input id="team2ColorText" class="color-text" value="#595963" oninput="setTeamCardStyle(2, true)" />
+              </div>
+
+              <label class="label-small">Font Color</label>
+              <div class="color-row">
+                <input id="team2FontColorPicker" class="color-preview" type="color" value="#ffffff" onchange="setTeamCardStyle(2)" />
+                <input id="team2FontColorText" class="color-text" value="#FFFFFF" oninput="setTeamCardStyle(2, false, true)" />
+              </div>
+
+              <label class="label-small">Divider / Indicator Color</label>
+              <div class="color-row">
+                <input id="team2LineColorPicker" class="color-preview" type="color" value="#ffffff" onchange="setTeamCardStyle(2)" />
+                <input id="team2LineColorText" class="color-text" value="#FFFFFF" oninput="setTeamCardStyle(2, false, false, true)" />
+              </div>
+
+              <label class="label-small">Team 2 Logo</label>
+              <input id="team2LogoUpload" type="file" accept="image/*" class="logo-upload" onchange="handleLogoUpload(2, event)" />
+              <div id="team2LogoName" class="logo-name">No file selected</div>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:16px;">
+            <label class="label">Shared Opacity</label>
+            <div class="row-3">
+              <input id="sharedOpacityInput" class="mini-input" value="85" oninput="syncSharedOpacityFromInput()" />
+              <span class="suffix">%</span>
+            </div>
+            <div class="range-wrap">
+              <input id="sharedOpacityRange" type="range" min="10" max="100" value="85" oninput="syncSharedOpacityFromRange()" />
+              <div class="range-minmax">
+                <span>10</span>
+                <span>100</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">LOGO SETTINGS</div>
+          <div class="logo-row">
+            <label class="label" style="margin-bottom:0;">Logo Size</label>
+            <input id="logoSizeInput" class="mini-input" value="80" oninput="syncLogoSizeFromInput()" />
+            <span class="suffix">px</span>
+            <div>
+              <input id="logoSizeRange" type="range" min="20" max="200" value="80" oninput="syncLogoSizeFromRange()" />
+              <div class="range-minmax">
+                <span>20</span>
+                <span>200</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">PRESETS</div>
+          <div class="preset-grid">
+            <button class="preset-btn active" onclick="applyPreset('default', this)">AP Default</button>
+            <button class="preset-btn" onclick="applyPreset('dark', this)">Dark Navy</button>
+            <button class="preset-btn" onclick="applyPreset('pink', this)">Pink Glow</button>
+            <button class="preset-btn" onclick="applyPreset('minimal', this)">Minimal</button>
+            <button class="preset-btn" onclick="applyPreset('classic', this)">Classic</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="preview-panel">
+        <div class="preview-title">LIVE PREVIEW <span>(Matches your OBS output)</span></div>
+
+        <section class="preview-box" id="livePreviewBox">
+          <div class="team-card" id="team1Card">
+            <div class="preview-logo" id="previewLogoWrap1">
+              <div id="logo1Fallback" class="fallback">
+                <div class="ap">AP</div>
+                <div class="sub">PICKLE<br>GROUND</div>
+              </div>
+              <img id="logo1Image" class="team-logo-img" alt="Team 1 Logo" />
+            </div>
+
+            <div>
+              <div class="team-main-name" id="previewTeam1Main">GABRIEL / CARLO</div>
+              <div class="team-sub-name" id="previewTeam1Sub">Gabriel Joseph / Carlo Antonio</div>
+            </div>
+
+            <div class="serve-indicators" id="serveIndicatorTeam1"></div>
+
+            <div class="preview-score" id="preview-score1">11</div>
+          </div>
+
+          <div class="team-card" id="team2Card">
+            <div class="preview-logo" id="previewLogoWrap2">
+              <div id="logo2Fallback" class="fallback">
+                <div class="ap">AP</div>
+                <div class="sub">PICKLE<br>GROUND</div>
+              </div>
+              <img id="logo2Image" class="team-logo-img" alt="Team 2 Logo" />
+            </div>
+
+            <div>
+              <div class="team-main-name" id="previewTeam2Main">JOHN / MARK</div>
+              <div class="team-sub-name" id="previewTeam2Sub">John Smith / Mark Davis</div>
+            </div>
+
+            <div class="serve-indicators" id="serveIndicatorTeam2"></div>
+
+            <div class="preview-score" id="preview-score2">8</div>
+          </div>
+
+          <div class="bottom-match-info" id="bottomMatchInfo"></div>
+        </section>
+
+        <!-- SCORE CONTROL FIRST -->
+        <section class="score-box">
+          <div class="section-title">SCORE CONTROL</div>
+
+          <div class="score-main">
+            <div>
+              <div class="score-team-title" id="scoreTitle1">TEAM 1 SCORE</div>
+              <div class="score-controls">
+                <button class="score-btn" onclick="adj('score1', -1)">−</button>
+                <div class="score-display" id="score1">11</div>
+                <button class="score-btn" onclick="adj('score1', 1)">+</button>
+                <button class="reset-btn" onclick="resetScore('score1')">Reset</button>
+              </div>
+            </div>
+
+            <div class="reset-center">
+              <button class="reset-all-btn" onclick="resetAllScores()">RESET ALL SCORES</button>
+              <div class="reset-caption">Resets both teams to 0</div>
+            </div>
+
+            <div>
+              <div class="score-team-title" id="scoreTitle2">TEAM 2 SCORE</div>
+              <div class="score-controls">
+                <button class="score-btn" onclick="adj('score2', -1)">−</button>
+                <div class="score-display" id="score2">8</div>
+                <button class="score-btn" onclick="adj('score2', 1)">+</button>
+                <button class="reset-btn" onclick="resetScore('score2')">Reset</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SERVICE CONTROL SECOND -->
+        <section class="service-box">
+          <div class="section-title">SERVICE CONTROL</div>
+
+          <div class="service-top">
+            <div class="service-status-card">
+              <div>
+                <div class="status-title">CURRENT SERVICE STATUS</div>
+                <div class="status-team" id="currentServiceTeam">TEAM 1</div>
+                <div class="status-serve" id="currentServiceText">2nd Serve</div>
+                <div class="status-dots" id="currentServiceDots"></div>
+              </div>
+            </div>
+
+            <div class="service-right">
+              <button class="next-service-btn" onclick="nextService()">NEXT SERVICE →</button>
+
+              <div class="service-cycle-box">
+                <small>Cycles service in this order:</small>
+                T1 1st → T1 2nd → T2 1st → T2 2nd →<br />
+                (back to T1 1st)
+              </div>
+            </div>
+          </div>
+
+          <div class="manual-title">MANUAL SERVICE ALLOCATION <span>(Override)</span></div>
+
+          <div class="service-options">
+            <button class="service-option" onclick="setService(0, this)">
+              <div class="mini-dots"></div>
+              <div>T1 No Serve</div>
+            </button>
+
+            <button class="service-option" onclick="setService(1, this)">
+              <div class="mini-dots"><div class="mini-dot"></div></div>
+              <div>T1 1st Serve</div>
+            </button>
+
+            <button class="service-option active" onclick="setService(2, this)">
+              <div class="mini-dots"><div class="mini-dot"></div><div class="mini-dot"></div></div>
+              <div>T1 2nd Serve</div>
+            </button>
+
+            <button class="service-option" onclick="setService(3, this)">
+              <div class="mini-dots"></div>
+              <div>T2 No Serve</div>
+            </button>
+
+            <button class="service-option" onclick="setService(4, this)">
+              <div class="mini-dots"><div class="mini-dot"></div></div>
+              <div>T2 1st Serve</div>
+            </button>
+
+            <button class="service-option" onclick="setService(5, this)">
+              <div class="mini-dots"><div class="mini-dot"></div><div class="mini-dot"></div></div>
+              <div>T2 2nd Serve</div>
+            </button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="connection-status">
+    <div class="dot"></div>
+    Connected via BroadcastChannel API
+  </div>
+
+  <script>
+
+	const state = {
+		team1: {
+			name: "",
+			players: "",
+			score: 11,
+			logo: "",
+			bg: "#E5AFB6",
+			font: "#000000",
+			line: "#000000"
+		},
+		team2: {
+			name: "",
+			players: "",
+			score: 8,
+			logo: "",
+			bg: "#595963",
+			font: "#FFFFFF",
+			line: "#FFFFFF"
+		},
+		match: {
+			court: "COURT 1",
+			division: "MEN'S DOUBLES",
+			bracket: "GROUP A"
+		},
+		settings: {
+			width: 1400,
+			opacity: 85,
+			logoSize: 80
+		},
+		service: 2
+	};  
+  
+    let serviceState = 2;
+
+    // --- Cross-page sync (works entirely client-side, no backend needed) ---
+    // The overlay page reads/writes the same localStorage key on the same
+    // origin, and gets instant pushes via BroadcastChannel. This works when
+    // admin.html and overlay.html are loaded from the same GitHub Pages site
+    // inside the same browser engine (e.g. both loaded inside OBS: overlay
+    // as a Browser Source, admin as a Custom Browser Dock).
+    const STATE_STORAGE_KEY = "apPickleGround_scoreboardState";
+    const stateChannel = ("BroadcastChannel" in window)
+      ? new BroadcastChannel("ap-pickle-scoreboard")
+      : null;
+
+    function saveState() {
+      try {
+        localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.warn("Could not persist state to localStorage", e);
+      }
+      if (stateChannel) {
+        stateChannel.postMessage(state);
+      }
+    }
+
+    function loadSavedState() {
+      try {
+        const raw = localStorage.getItem(STATE_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function hydrateFromState(saved) {
+      if (!saved) return;
+
+      Object.assign(state.team1, saved.team1 || {});
+      Object.assign(state.team2, saved.team2 || {});
+      Object.assign(state.match, saved.match || {});
+      Object.assign(state.settings, saved.settings || {});
+      if (saved.service !== undefined) state.service = saved.service;
+
+      document.getElementById('team1NameInput').value = state.team1.name || 'GABRIEL / CARLO';
+      document.getElementById('team1PlayersInput').value = state.team1.players || '';
+      document.getElementById('team1ColorPicker').value = state.team1.bg;
+      document.getElementById('team1ColorText').value = state.team1.bg;
+      document.getElementById('team1FontColorPicker').value = state.team1.font;
+      document.getElementById('team1FontColorText').value = state.team1.font;
+      document.getElementById('team1LineColorPicker').value = state.team1.line;
+      document.getElementById('team1LineColorText').value = state.team1.line;
+      document.getElementById('score1').textContent = state.team1.score;
+      document.getElementById('preview-score1').textContent = state.team1.score;
+
+      document.getElementById('team2NameInput').value = state.team2.name || 'JOHN / MARK';
+      document.getElementById('team2PlayersInput').value = state.team2.players || '';
+      document.getElementById('team2ColorPicker').value = state.team2.bg;
+      document.getElementById('team2ColorText').value = state.team2.bg;
+      document.getElementById('team2FontColorPicker').value = state.team2.font;
+      document.getElementById('team2FontColorText').value = state.team2.font;
+      document.getElementById('team2LineColorPicker').value = state.team2.line;
+      document.getElementById('team2LineColorText').value = state.team2.line;
+      document.getElementById('score2').textContent = state.team2.score;
+      document.getElementById('preview-score2').textContent = state.team2.score;
+
+      document.getElementById('courtInput').value = state.match.court || '';
+      document.getElementById('divisionInput').value = state.match.division || '';
+      document.getElementById('bracketInput').value = state.match.bracket || '';
+
+      document.getElementById('overlayWidthInput').value = state.settings.width || 1400;
+      document.getElementById('overlayWidthRange').value = state.settings.width || 1400;
+      document.getElementById('sharedOpacityInput').value = state.settings.opacity || 85;
+      document.getElementById('sharedOpacityRange').value = state.settings.opacity || 85;
+      document.getElementById('logoSizeInput').value = state.settings.logoSize || 80;
+      document.getElementById('logoSizeRange').value = state.settings.logoSize || 80;
+
+      if (state.team1.logo) {
+        const img1 = document.getElementById('logo1Image');
+        img1.src = state.team1.logo;
+        img1.style.display = 'block';
+        document.getElementById('logo1Fallback').style.display = 'none';
+        document.getElementById('team1LogoName').textContent = 'Logo restored from last session';
+      }
+      if (state.team2.logo) {
+        const img2 = document.getElementById('logo2Image');
+        img2.src = state.team2.logo;
+        img2.style.display = 'block';
+        document.getElementById('logo2Fallback').style.display = 'none';
+        document.getElementById('team2LogoName').textContent = 'Logo restored from last session';
+      }
+    }
+
+    function updateRangeFill(el) {
+      const min = Number(el.min || 0);
+      const max = Number(el.max || 100);
+      const val = Number(el.value || 0);
+      const pct = ((val - min) / (max - min)) * 100;
+      el.style.setProperty('--percent', pct + '%');
+    }
+
+    function initRanges() {
+      document.querySelectorAll('input[type="range"]').forEach(updateRangeFill);
+    }
+
+    function normalizeHex(value, fallback = '#000000') {
+      let val = (value || '').trim();
+      if (!val.startsWith('#')) val = '#' + val;
+      if (/^#[0-9A-Fa-f]{6}$/.test(val)) return val.toUpperCase();
+      return fallback.toUpperCase();
+    }
+
+    function hexToRgba(hex, opacityPercent) {
+      let clean = (hex || '').replace('#', '').trim();
+      if (clean.length === 3) clean = clean.split('').map(c => c + c).join('');
+      if (clean.length !== 6) return 'rgba(12,18,27,0.85)';
+      const r = parseInt(clean.substring(0, 2), 16);
+      const g = parseInt(clean.substring(2, 4), 16);
+      const b = parseInt(clean.substring(4, 6), 16);
+      const a = Math.max(0, Math.min(100, Number(opacityPercent))) / 100;
+      return `rgba(${r}, ${g}, ${b}, ${a})`;
+    }
+
+    function updateScoreTitles() {
+      const team1Name = document.getElementById('team1NameInput').value.trim();
+      const team2Name = document.getElementById('team2NameInput').value.trim();
+
+      document.getElementById('scoreTitle1').textContent = team1Name ? `${team1Name} SCORE` : 'TEAM 1 SCORE';
+      document.getElementById('scoreTitle2').textContent = team2Name ? `${team2Name} SCORE` : 'TEAM 2 SCORE';
+    }
+
+    function updateTeamText(team) {
+      const nameInput = document.getElementById(`team${team}NameInput`);
+      const playersInput = document.getElementById(`team${team}PlayersInput`);
+      const previewName = document.getElementById(`previewTeam${team}Main`);
+      const previewPlayers = document.getElementById(`previewTeam${team}Sub`);
+
+      previewName.textContent = nameInput.value.trim() || `TEAM ${team}`;
+      previewPlayers.textContent = playersInput.value.trim() || '';
+      updateScoreTitles();
+		  
+	state[`team${team}`].name = teamName;
+	state[`team${team}`].players = playersInput.value.trim();
+	saveState();
+	  
+    }
+
+    function getTeamLineColor(team) {
+      return normalizeHex(document.getElementById(`team${team}LineColorText`).value, '#FFFFFF');
+    }
+
+    function getDisplayTeamLabel(team) {
+      const teamName = document.getElementById(`team${team}NameInput`).value.trim();
+      return teamName || `TEAM ${team}`;
+    }
+
+    function setTeamCardStyle(team, fromBgText = false, fromFontText = false, fromLineText = false) {
+      const bgPicker = document.getElementById(`team${team}ColorPicker`);
+      const bgText = document.getElementById(`team${team}ColorText`);
+      const fontPicker = document.getElementById(`team${team}FontColorPicker`);
+      const fontText = document.getElementById(`team${team}FontColorText`);
+      const linePicker = document.getElementById(`team${team}LineColorPicker`);
+      const lineText = document.getElementById(`team${team}LineColorText`);
+      const opacity = document.getElementById('sharedOpacityInput').value || 85;
+
+      if (fromBgText) {
+        bgText.value = normalizeHex(bgText.value, bgPicker.value);
+        bgPicker.value = bgText.value;
+      } else {
+        bgText.value = normalizeHex(bgPicker.value, bgText.value);
+      }
+
+      if (fromFontText) {
+        fontText.value = normalizeHex(fontText.value, fontPicker.value);
+        fontPicker.value = fontText.value;
+      } else {
+        fontText.value = normalizeHex(fontPicker.value, fontText.value);
+      }
+
+      if (fromLineText) {
+        lineText.value = normalizeHex(lineText.value, linePicker.value);
+        linePicker.value = lineText.value;
+      } else {
+        lineText.value = normalizeHex(linePicker.value, lineText.value);
+      }
+
+      const bgColor = bgText.value;
+      const fontColor = fontText.value;
+      const lineColor = lineText.value;
+
+      const card = document.getElementById(`team${team}Card`);
+      card.style.background = `linear-gradient(90deg, ${hexToRgba(bgColor, opacity)}, ${hexToRgba(bgColor, opacity)})`;
+      card.style.borderColor = lineColor;
+
+      const logoWrap = document.getElementById(`previewLogoWrap${team}`);
+      logoWrap.style.borderRightColor = lineColor;
+
+      document.getElementById(`previewTeam${team}Main`).style.color = fontColor;
+      document.getElementById(`previewTeam${team}Sub`).style.color = fontColor;
+      document.getElementById(`preview-score${team}`).style.color = fontColor;
+
+      updateServiceVisuals();
+	  
+	  state[`team${team}`].bg = bgColor;
+	state[`team${team}`].font = fontColor;
+	state[`team${team}`].line = lineColor;
+
+	saveState();
+	  
+    }
+
+    function createServeDot(className, color) {
+      const dot = document.createElement('div');
+      dot.className = className;
+      dot.style.background = color;
+      return dot;
+    }
+
+    function renderPreviewServe(team, count) {
+      const box = document.getElementById(`serveIndicatorTeam${team}`);
+      box.innerHTML = '';
+      if (count <= 0) return;
+      const color = getTeamLineColor(team);
+      for (let i = 0; i < count; i++) {
+        box.appendChild(createServeDot('serve-dot', color));
+      }
+    }
+
+    function renderCurrentServiceDots(team, count) {
+      const box = document.getElementById('currentServiceDots');
+      box.innerHTML = '';
+      if (count <= 0) return;
+      const color = getTeamLineColor(team);
+      for (let i = 0; i < count; i++) {
+        box.appendChild(createServeDot('status-dot', color));
+      }
+    }
+
+    function updateServiceVisuals() {
+      const teamLabel = document.getElementById('currentServiceTeam');
+      const serveText = document.getElementById('currentServiceText');
+
+      if (serviceState === 0) {
+        teamLabel.textContent = getDisplayTeamLabel(1);
+        serveText.textContent = 'No Serve';
+        renderCurrentServiceDots(1, 0);
+        renderPreviewServe(1, 0);
+        renderPreviewServe(2, 0);
+      } else if (serviceState === 1) {
+        teamLabel.textContent = getDisplayTeamLabel(1);
+        serveText.textContent = '1st Serve';
+        renderCurrentServiceDots(1, 1);
+        renderPreviewServe(1, 1);
+        renderPreviewServe(2, 0);
+      } else if (serviceState === 2) {
+        teamLabel.textContent = getDisplayTeamLabel(1);
+        serveText.textContent = '2nd Serve';
+        renderCurrentServiceDots(1, 2);
+        renderPreviewServe(1, 2);
+        renderPreviewServe(2, 0);
+      } else if (serviceState === 3) {
+        teamLabel.textContent = getDisplayTeamLabel(2);
+        serveText.textContent = 'No Serve';
+        renderCurrentServiceDots(2, 0);
+        renderPreviewServe(1, 0);
+        renderPreviewServe(2, 0);
+      } else if (serviceState === 4) {
+        teamLabel.textContent = getDisplayTeamLabel(2);
+        serveText.textContent = '1st Serve';
+        renderCurrentServiceDots(2, 1);
+        renderPreviewServe(1, 0);
+        renderPreviewServe(2, 1);
+      } else if (serviceState === 5) {
+        teamLabel.textContent = getDisplayTeamLabel(2);
+        serveText.textContent = '2nd Serve';
+        renderCurrentServiceDots(2, 2);
+        renderPreviewServe(1, 0);
+        renderPreviewServe(2, 2);
+      }
+    }
+
+    function setService(serviceValue, clickedButton = null) {
+      serviceState = serviceValue;
+      document.querySelectorAll('.service-option').forEach(btn => btn.classList.remove('active'));
+      if (clickedButton) {
+        clickedButton.classList.add('active');
+      } else {
+        const buttons = document.querySelectorAll('.service-option');
+        if (buttons[serviceValue]) buttons[serviceValue].classList.add('active');
+      }
+      updateServiceVisuals();
+
+      state.service = serviceValue;
+      saveState();
+    }
+
+    function nextService() {
+      const order = [1, 2, 4, 5];
+      const currentIndex = order.indexOf(serviceState);
+      if (currentIndex === -1) {
+        setService(1);
+      } else {
+        const nextIndex = (currentIndex + 1) % order.length;
+        setService(order[nextIndex]);
+      }
+    }
+
+    function handleLogoUpload(team, event) {
+      const file = event.target.files[0];
+      const fileName = document.getElementById(`team${team}LogoName`);
+      const img = document.getElementById(`logo${team}Image`);
+      const fallback = document.getElementById(`logo${team}Fallback`);
+
+      if (!file) {
+        fileName.textContent = 'No file selected';
+        img.src = '';
+        img.style.display = 'none';
+        fallback.style.display = 'flex';
+        return;
+      }
+
+      fileName.textContent = file.name;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        img.onload = function() {
+          img.style.display = 'block';
+          fallback.style.display = 'none';
+        };
+        img.src = e.target.result;
+		
+		state[`team${team}`].logo = e.target.result;
+		saveState();
+		
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function updateMatchInfoDisplay() {
+      const court = document.getElementById('courtInput').value.trim();
+      const division = document.getElementById('divisionInput').value.trim();
+      const bracket = document.getElementById('bracketInput').value.trim();
+      const wrap = document.getElementById('bottomMatchInfo');
+
+      const items = [court, division, bracket].filter(v => v !== '');
+      wrap.innerHTML = '';
+
+      items.forEach((item, index) => {
+        const span = document.createElement('span');
+        span.textContent = item;
+        wrap.appendChild(span);
+
+        if (index < items.length - 1) {
+          const sep = document.createElement('span');
+          sep.className = 'separator';
+          wrap.appendChild(sep);
+        }
+      });
+	  
+	state.match.court =
+		document.getElementById("courtInput").value;
+
+	state.match.division =
+		document.getElementById("divisionInput").value;
+
+	state.match.bracket =
+		document.getElementById("bracketInput").value;
+
+	saveState();
+
+    }
+
+    function applyOverlayWidth(width) {
+      const preview = document.getElementById('livePreviewBox');
+      preview.style.maxWidth = width + 'px';
+    }
+
+    function syncOverlayWidthFromRange() {
+      const range = document.getElementById('overlayWidthRange');
+      const input = document.getElementById('overlayWidthInput');
+      input.value = range.value;
+      updateRangeFill(range);
+      applyOverlayWidth(range.value);
+    }
+
+    function syncOverlayWidthFromInput() {
+      const input = document.getElementById('overlayWidthInput');
+      const range = document.getElementById('overlayWidthRange');
+      let val = parseInt(input.value, 10) || 1400;
+      if (val < 600) val = 600;
+      if (val > 2500) val = 2500;
+      input.value = val;
+      range.value = val;
+      updateRangeFill(range);
+      applyOverlayWidth(val);
+    }
+
+    function syncSharedOpacityFromRange() {
+      const range = document.getElementById('sharedOpacityRange');
+      const input = document.getElementById('sharedOpacityInput');
+      input.value = range.value;
+      updateRangeFill(range);
+      setTeamCardStyle(1);
+      setTeamCardStyle(2);
+    }
+
+    function syncSharedOpacityFromInput() {
+      const input = document.getElementById('sharedOpacityInput');
+      const range = document.getElementById('sharedOpacityRange');
+      let val = parseInt(input.value, 10) || 85;
+      if (val < 10) val = 10;
+      if (val > 100) val = 100;
+      input.value = val;
+      range.value = val;
+      updateRangeFill(range);
+      setTeamCardStyle(1);
+      setTeamCardStyle(2);
+    }
+
+    function syncLogoSizeFromRange() {
+      const range = document.getElementById('logoSizeRange');
+      const input = document.getElementById('logoSizeInput');
+      input.value = range.value;
+      updateRangeFill(range);
+      applyLogoSize(range.value);
+    }
+
+    function syncLogoSizeFromInput() {
+      const input = document.getElementById('logoSizeInput');
+      const range = document.getElementById('logoSizeRange');
+      let val = parseInt(input.value, 10) || 80;
+      if (val < 20) val = 20;
+      if (val > 200) val = 200;
+      input.value = val;
+      range.value = val;
+      updateRangeFill(range);
+      applyLogoSize(val);
+    }
+
+    function applyLogoSize(size) {
+      document.querySelectorAll('.preview-logo').forEach(el => {
+        el.style.width = size + 'px';
+      });
+
+      document.querySelectorAll('.team-logo-img').forEach(img => {
+        img.style.maxWidth = Math.max(20, size - 10) + 'px';
+        img.style.maxHeight = Math.max(20, size - 10) + 'px';
+      });
+
+      document.querySelectorAll('.preview-logo .ap').forEach(el => {
+        el.style.fontSize = Math.max(18, size * 0.35) + 'px';
+      });
+
+      document.querySelectorAll('.preview-logo .sub').forEach(el => {
+        el.style.fontSize = Math.max(7, size * 0.11) + 'px';
+      });
+    }
+
+    function adj(id, change) {
+      const el = document.getElementById(id);
+      let score = parseInt(el.textContent, 10) || 0;
+      score = Math.max(0, score + change);
+      el.textContent = score;
+      updatePreviewScore(id, score);
+    }
+
+    function resetScore(id) {
+      document.getElementById(id).textContent = '0';
+      updatePreviewScore(id, 0);
+    }
+
+    function resetAllScores() {
+      resetScore('score1');
+      resetScore('score2');
+    }
+
+    function updatePreviewScore(id, score) {
+      if (id === 'score1') {
+        document.getElementById('preview-score1').textContent = score;
+      } else if (id === 'score2') {
+        document.getElementById('preview-score2').textContent = score;
+      }
+	  
+	  if(id==="score1")
+		state.team1.score = score;
+	else
+		state.team2.score = score;
+
+	saveState();
+    }
+
+    function applyPreset(name, btn) {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      if (name === 'default') {
+        document.getElementById('team1ColorPicker').value = '#e5afb6';
+        document.getElementById('team1ColorText').value = '#E5AFB6';
+        document.getElementById('team1FontColorPicker').value = '#000000';
+        document.getElementById('team1FontColorText').value = '#000000';
+        document.getElementById('team1LineColorPicker').value = '#000000';
+        document.getElementById('team1LineColorText').value = '#000000';
+
+        document.getElementById('team2ColorPicker').value = '#595963';
+        document.getElementById('team2ColorText').value = '#595963';
+        document.getElementById('team2FontColorPicker').value = '#ffffff';
+        document.getElementById('team2FontColorText').value = '#FFFFFF';
+        document.getElementById('team2LineColorPicker').value = '#ffffff';
+        document.getElementById('team2LineColorText').value = '#FFFFFF';
+      } else if (name === 'dark') {
+        document.getElementById('team1ColorPicker').value = '#1B2431';
+        document.getElementById('team1ColorText').value = '#1B2431';
+        document.getElementById('team1FontColorPicker').value = '#FFFFFF';
+        document.getElementById('team1FontColorText').value = '#FFFFFF';
+        document.getElementById('team1LineColorPicker').value = '#FFFFFF';
+        document.getElementById('team1LineColorText').value = '#FFFFFF';
+
+        document.getElementById('team2ColorPicker').value = '#111827';
+        document.getElementById('team2ColorText').value = '#111827';
+        document.getElementById('team2FontColorPicker').value = '#FFFFFF';
+        document.getElementById('team2FontColorText').value = '#FFFFFF';
+        document.getElementById('team2LineColorPicker').value = '#FFFFFF';
+        document.getElementById('team2LineColorText').value = '#FFFFFF';
+      } else if (name === 'pink') {
+        document.getElementById('team1ColorPicker').value = '#FFD1DC';
+        document.getElementById('team1ColorText').value = '#FFD1DC';
+        document.getElementById('team1FontColorPicker').value = '#4B1025';
+        document.getElementById('team1FontColorText').value = '#4B1025';
+        document.getElementById('team1LineColorPicker').value = '#4B1025';
+        document.getElementById('team1LineColorText').value = '#4B1025';
+
+        document.getElementById('team2ColorPicker').value = '#5C2440';
+        document.getElementById('team2ColorText').value = '#5C2440';
+        document.getElementById('team2FontColorPicker').value = '#FFFFFF';
+        document.getElementById('team2FontColorText').value = '#FFFFFF';
+        document.getElementById('team2LineColorPicker').value = '#FFFFFF';
+        document.getElementById('team2LineColorText').value = '#FFFFFF';
+      } else if (name === 'minimal') {
+        document.getElementById('team1ColorPicker').value = '#F5F5F5';
+        document.getElementById('team1ColorText').value = '#F5F5F5';
+        document.getElementById('team1FontColorPicker').value = '#000000';
+        document.getElementById('team1FontColorText').value = '#000000';
+        document.getElementById('team1LineColorPicker').value = '#000000';
+        document.getElementById('team1LineColorText').value = '#000000';
+
+        document.getElementById('team2ColorPicker').value = '#222222';
+        document.getElementById('team2ColorText').value = '#222222';
+        document.getElementById('team2FontColorPicker').value = '#FFFFFF';
+        document.getElementById('team2FontColorText').value = '#FFFFFF';
+        document.getElementById('team2LineColorPicker').value = '#FFFFFF';
+        document.getElementById('team2LineColorText').value = '#FFFFFF';
+      } else if (name === 'classic') {
+        document.getElementById('team1ColorPicker').value = '#D8C8A8';
+        document.getElementById('team1ColorText').value = '#D8C8A8';
+        document.getElementById('team1FontColorPicker').value = '#2A1E12';
+        document.getElementById('team1FontColorText').value = '#2A1E12';
+        document.getElementById('team1LineColorPicker').value = '#2A1E12';
+        document.getElementById('team1LineColorText').value = '#2A1E12';
+
+        document.getElementById('team2ColorPicker').value = '#3A3F4B';
+        document.getElementById('team2ColorText').value = '#3A3F4B';
+        document.getElementById('team2FontColorPicker').value = '#FFFFFF';
+        document.getElementById('team2FontColorText').value = '#FFFFFF';
+        document.getElementById('team2LineColorPicker').value = '#FFFFFF';
+        document.getElementById('team2LineColorText').value = '#FFFFFF';
+      }
+
+      setTeamCardStyle(1);
+      setTeamCardStyle(2);
+    }
+
+    function resetAll() {
+      resetAllScores();
+
+      document.getElementById('courtInput').value = 'COURT 1';
+      document.getElementById('divisionInput').value = "MEN'S DOUBLES";
+      document.getElementById('bracketInput').value = 'GROUP A';
+
+      document.getElementById('team1NameInput').value = 'GABRIEL / CARLO';
+      document.getElementById('team1PlayersInput').value = 'Gabriel Joseph / Carlo Antonio';
+      document.getElementById('team2NameInput').value = 'JOHN / MARK';
+      document.getElementById('team2PlayersInput').value = 'John Smith / Mark Davis';
+
+      updateMatchInfoDisplay();
+      updateTeamText(1);
+      updateTeamText(2);
+
+      document.getElementById('sharedOpacityInput').value = 85;
+      document.getElementById('sharedOpacityRange').value = 85;
+      updateRangeFill(document.getElementById('sharedOpacityRange'));
+
+      applyPreset('default', document.querySelector('.preset-btn'));
+      setService(2);
+    }
+
+    hydrateFromState(loadSavedState());
+
+    initRanges();
+    applyOverlayWidth(state.settings.width);
+    updateMatchInfoDisplay();
+    applyLogoSize(state.settings.logoSize);
+    updateTeamText(1);
+    updateTeamText(2);
+    updateScoreTitles();
+    setTeamCardStyle(1);
+    setTeamCardStyle(2);
+    setService(state.service);
+    saveState();
+  </script>
+</body>
+</html>
