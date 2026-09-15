@@ -1169,7 +1169,7 @@
 
     const STATE_STORAGE_KEY = "apPickleGround_scoreboardState";
     const BOARD_ID_STORAGE_KEY = "apPickleGround_boardId";
-    const QUICK_BOARD_IDS = ["court1", "court2", "court3", "court4"];
+    const QUICK_BOARD_IDS = ["1", "2", "3", "4"];
     const stateChannel = ("BroadcastChannel" in window)
       ? new BroadcastChannel("ap-pickle-scoreboard")
       : null;
@@ -1320,7 +1320,7 @@
     // defaults if it's never been used), and renders everything.
     async function loadBoard(id) {
       connectToBoard(id);
-      setBoardLinkStatus("Loading Court " + id.replace("court", "") + "\u2026");
+      setBoardLinkStatus("Loading Court " + id + "\u2026");
 
       const remote = await fetchRemoteState();
       if (remote) {
