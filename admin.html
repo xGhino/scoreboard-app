@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ATP Pickle Ground - Scoreboard Control</title>
+  <title>AP Pickle Ground - Scoreboard Control</title>
   <style>
     * {
       margin: 0;
@@ -309,6 +309,84 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
       margin-bottom: 10px;
+    }
+
+    .view-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      max-width: 900px;
+      margin: 0 auto 14px;
+    }
+
+    .view-tabs .board-btn {
+      padding: 12px 6px;
+      font-size: 14px;
+    }
+
+    .tabulation-view {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .standings-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .standings-table th,
+    .standings-table td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .standings-table th {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .standings-table td.num,
+    .standings-table th.num {
+      text-align: center;
+      width: 60px;
+    }
+
+    .standings-table tr:first-child td {
+      color: var(--pink);
+      font-weight: 700;
+    }
+
+    .match-log-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .match-log-item:last-child {
+      border-bottom: none;
+    }
+
+    .match-log-item .teams {
+      color: #d7e6ff;
+    }
+
+    .delete-link {
+      background: none;
+      border: none;
+      color: #ff6b6b;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
     }
 
     .preview-title {
@@ -770,12 +848,17 @@
 </head>
 <body>
   <div class="container">
-    <main class="main-content">
+    <div class="view-tabs">
+      <button class="board-btn active" id="viewTabScoreboard" type="button" onclick="switchView('scoreboard')">Scoreboard</button>
+      <button class="board-btn" id="viewTabTabulation" type="button" onclick="switchView('tabulation')">Tabulation</button>
+    </div>
+
+    <main class="main-content" id="scoreboardView">
       <div class="control-panel">
         <div class="topbar">
           <div>
             <h1>SCOREBOARD CONTROL</h1>
-            <div class="brand-inline">ATP PICKLE GROUND</div>
+            <div class="brand-inline">AP PICKLE GROUND</div>
           </div>
           <div class="version">V10</div>
         </div>
@@ -996,7 +1079,7 @@
         <section class="section">
           <div class="section-title">PRESETS</div>
           <div class="preset-grid">
-            <button class="preset-btn active" onclick="applyPreset('default', this)">ATP Default</button>
+            <button class="preset-btn active" onclick="applyPreset('default', this)">AP Default</button>
             <button class="preset-btn" onclick="applyPreset('dark', this)">Dark Navy</button>
             <button class="preset-btn" onclick="applyPreset('pink', this)">Pink Glow</button>
             <button class="preset-btn" onclick="applyPreset('minimal', this)">Minimal</button>
@@ -1012,7 +1095,7 @@
           <div class="team-card" id="team1Card">
             <div class="preview-logo" id="previewLogoWrap1">
               <div id="logo1Fallback" class="fallback">
-                <div class="ap">ATP</div>
+                <div class="ap">AP</div>
                 <div class="sub">PICKLE<br>GROUND</div>
               </div>
               <img id="logo1Image" class="team-logo-img" alt="Team 1 Logo" />
@@ -1031,7 +1114,7 @@
           <div class="team-card" id="team2Card">
             <div class="preview-logo" id="previewLogoWrap2">
               <div id="logo2Fallback" class="fallback">
-                <div class="ap">ATP</div>
+                <div class="ap">AP</div>
                 <div class="sub">PICKLE<br>GROUND</div>
               </div>
               <img id="logo2Image" class="team-logo-img" alt="Team 2 Logo" />
@@ -1143,11 +1226,97 @@
         </section>
       </div>
     </main>
+
+    <div class="tabulation-view" id="tabulationView" style="display:none">
+      <section class="section">
+        <div class="section-title">BRACKETS</div>
+        <div class="field">
+          <div class="row-3">
+            <input id="newBracketNameInput" class="input" placeholder="New bracket name (e.g. Men's Intermediate A)" />
+            <button class="reset-btn" type="button" onclick="addBracket()">Add Bracket</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Select bracket</label>
+          <select id="bracketSelect" class="input" onchange="selectBracket(this.value)">
+            <option value="">-- No brackets yet --</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="section" id="bracketDetailSection" style="display:none">
+        <div class="section-title" id="bracketDetailTitle">BRACKET</div>
+        <div class="field">
+          <label class="label">Add a team to this bracket</label>
+          <div class="row-3">
+            <input id="newTeamNameInput" class="input" placeholder="Team name" />
+            <button class="reset-btn" type="button" onclick="addTeamToBracket()">Add Team</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Standings</label>
+          <table class="standings-table">
+            <thead>
+              <tr>
+                <th>Team</th>
+                <th class="num">W</th>
+                <th class="num">Played</th>
+                <th class="num">Points</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="standingsTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="logMatchSection" style="display:none">
+        <div class="section-title">LOG A MATCH</div>
+        <div class="field">
+          <label class="label">Pull score from a court (you can still edit before saving)</label>
+          <div class="row-3">
+            <select id="pullCourtSelect" class="input">
+              <option value="1">Court 1</option>
+              <option value="2">Court 2</option>
+              <option value="3">Court 3</option>
+              <option value="4">Court 4</option>
+            </select>
+            <button class="reset-btn" type="button" onclick="pullScoreFromCourt()">Pull Score</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Team A</label>
+          <div class="row-3">
+            <select id="matchTeamASelect" class="input"></select>
+            <input id="matchScoreAInput" class="mini-input" value="0" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label">Team B</label>
+          <div class="row-3">
+            <select id="matchTeamBSelect" class="input"></select>
+            <input id="matchScoreBInput" class="mini-input" value="0" />
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <button class="reset-btn" type="button" onclick="saveMatch()">Save Match</button>
+        </div>
+        <div class="logo-name" id="matchSaveStatus"></div>
+      </section>
+
+      <section class="section" id="matchLogSection" style="display:none">
+        <div class="section-title">RECENT MATCHES</div>
+        <div id="matchLogList"></div>
+      </section>
+    </div>
   </div>
 
   <div class="connection-status">
     <div class="dot"></div>
-    Connected via BroadcastChannel ATPI
+    Connected via BroadcastChannel API
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-app-compat.js"></script>
@@ -1397,6 +1566,357 @@
       const id = QUICK_BOARD_IDS[n - 1];
       if (!id || id === boardId) return;
       loadBoard(id);
+    }
+
+    // === TOURNAMENT TABULATION ===
+    // Separate from the per-court scoreboards above: this tracks brackets
+    // (pools), the teams in each, and every match played, so standings can
+    // be recomputed fresh from match history any time (adding or deleting
+    // a match just re-derives Wins/Played/Points — nothing can drift out
+    // of sync). Lives under its own "tournament/brackets" path in the same
+    // Firebase project.
+    const tournamentRef = fbDb.ref('tournament/brackets');
+    let bracketsCache = {};
+    let currentBracketId = null;
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = String(str);
+      return div.innerHTML;
+    }
+
+    function switchView(view) {
+      const scoreboardView = document.getElementById('scoreboardView');
+      const tabulationView = document.getElementById('tabulationView');
+      const tabScoreboard = document.getElementById('viewTabScoreboard');
+      const tabTabulation = document.getElementById('viewTabTabulation');
+
+      if (view === 'tabulation') {
+        scoreboardView.style.display = 'none';
+        tabulationView.style.display = 'block';
+        tabScoreboard.classList.remove('active');
+        tabTabulation.classList.add('active');
+        loadBrackets();
+      } else {
+        scoreboardView.style.display = '';
+        tabulationView.style.display = 'none';
+        tabTabulation.classList.remove('active');
+        tabScoreboard.classList.add('active');
+      }
+    }
+
+    async function loadBrackets() {
+      await ensureSignedIn();
+      try {
+        const snap = await tournamentRef.once('value');
+        bracketsCache = snap.exists() ? snap.val() : {};
+      } catch (e) {
+        bracketsCache = {};
+      }
+      renderBracketSelect();
+    }
+
+    function renderBracketSelect() {
+      const select = document.getElementById('bracketSelect');
+      const ids = Object.keys(bracketsCache);
+
+      if (ids.length === 0) {
+        select.innerHTML = '<option value="">-- No brackets yet --</option>';
+        document.getElementById('bracketDetailSection').style.display = 'none';
+        document.getElementById('logMatchSection').style.display = 'none';
+        document.getElementById('matchLogSection').style.display = 'none';
+        currentBracketId = null;
+        return;
+      }
+
+      select.innerHTML = ids.map(id =>
+        `<option value="${id}">${escapeHtml(bracketsCache[id].name || id)}</option>`
+      ).join('');
+
+      if (!currentBracketId || !bracketsCache[currentBracketId]) {
+        currentBracketId = ids[0];
+      }
+      select.value = currentBracketId;
+      selectBracket(currentBracketId);
+    }
+
+    async function addBracket() {
+      const input = document.getElementById('newBracketNameInput');
+      const name = input.value.trim();
+      if (!name) return;
+
+      await ensureSignedIn();
+      const id = tournamentRef.push().key;
+      const bracketData = { name, teams: {}, matches: {} };
+      try {
+        await tournamentRef.child(id).set(bracketData);
+        bracketsCache[id] = bracketData;
+        input.value = '';
+        currentBracketId = id;
+        renderBracketSelect();
+      } catch (e) {
+        alert('Could not create bracket (check database rules).');
+      }
+    }
+
+    function selectBracket(id) {
+      currentBracketId = id;
+      const bracket = bracketsCache[id];
+      const detailSection = document.getElementById('bracketDetailSection');
+      const logSection = document.getElementById('logMatchSection');
+      const logListSection = document.getElementById('matchLogSection');
+
+      if (!bracket) {
+        detailSection.style.display = 'none';
+        logSection.style.display = 'none';
+        logListSection.style.display = 'none';
+        return;
+      }
+
+      document.getElementById('bracketDetailTitle').textContent = (bracket.name || 'BRACKET').toUpperCase();
+      detailSection.style.display = '';
+      logSection.style.display = '';
+      logListSection.style.display = '';
+
+      renderStandings();
+      renderTeamSelects();
+      renderMatchLog();
+    }
+
+    async function addTeamToBracket() {
+      if (!currentBracketId) return;
+      const input = document.getElementById('newTeamNameInput');
+      const name = input.value.trim();
+      if (!name) return;
+
+      await ensureSignedIn();
+      const bracketRef = tournamentRef.child(currentBracketId);
+      const teamId = bracketRef.child('teams').push().key;
+
+      try {
+        await bracketRef.child('teams').child(teamId).set({ name });
+        if (!bracketsCache[currentBracketId].teams) bracketsCache[currentBracketId].teams = {};
+        bracketsCache[currentBracketId].teams[teamId] = { name };
+        input.value = '';
+        renderStandings();
+        renderTeamSelects();
+      } catch (e) {
+        alert('Could not add team (check database rules).');
+      }
+    }
+
+    async function removeTeamFromBracket(teamId) {
+      if (!currentBracketId) return;
+      if (!confirm('Remove this team? Past matches involving them stay in history but stop counting toward standings.')) return;
+
+      await ensureSignedIn();
+      try {
+        await tournamentRef.child(currentBracketId).child('teams').child(teamId).remove();
+        delete bracketsCache[currentBracketId].teams[teamId];
+        renderStandings();
+        renderTeamSelects();
+      } catch (e) {
+        alert('Could not remove team (check database rules).');
+      }
+    }
+
+    // Standings are always derived fresh from match history rather than
+    // stored/incremented directly, so adding or deleting a match can never
+    // leave Wins/Played/Points out of sync with the actual match log.
+    function computeStandings(bracket) {
+      const teams = bracket.teams || {};
+      const matches = bracket.matches || {};
+      const stats = {};
+
+      Object.keys(teams).forEach(id => {
+        stats[id] = { id, name: teams[id].name, wins: 0, played: 0, points: 0 };
+      });
+
+      Object.values(matches).forEach(m => {
+        const a = stats[m.teamAId];
+        const b = stats[m.teamBId];
+        if (!a || !b) return; // team was removed since this match was logged
+
+        const scoreA = Number(m.scoreA) || 0;
+        const scoreB = Number(m.scoreB) || 0;
+        a.played++; b.played++;
+        a.points += scoreA;
+        b.points += scoreB;
+        if (scoreA > scoreB) a.wins++;
+        else if (scoreB > scoreA) b.wins++;
+      });
+
+      return Object.values(stats).sort((x, y) =>
+        y.wins - x.wins || y.points - x.points || x.name.localeCompare(y.name)
+      );
+    }
+
+    function renderStandings() {
+      const bracket = bracketsCache[currentBracketId];
+      const tbody = document.getElementById('standingsTableBody');
+      if (!bracket) { tbody.innerHTML = ''; return; }
+
+      const standings = computeStandings(bracket);
+      if (standings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">No teams yet — add one above.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = standings.map(t => `
+        <tr>
+          <td>${escapeHtml(t.name)}</td>
+          <td class="num">${t.wins}</td>
+          <td class="num">${t.played}</td>
+          <td class="num">${t.points}</td>
+          <td><button class="delete-link" type="button" onclick="removeTeamFromBracket('${t.id}')">remove</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderTeamSelects() {
+      const bracket = bracketsCache[currentBracketId];
+      const teamA = document.getElementById('matchTeamASelect');
+      const teamB = document.getElementById('matchTeamBSelect');
+      if (!bracket) { teamA.innerHTML = ''; teamB.innerHTML = ''; return; }
+
+      const teams = bracket.teams || {};
+      const ids = Object.keys(teams);
+      const options = ids.map(id =>
+        `<option value="${id}">${escapeHtml(teams[id].name)}</option>`
+      ).join('');
+
+      teamA.innerHTML = options || '<option value="">-- Add teams first --</option>';
+      teamB.innerHTML = options || '<option value="">-- Add teams first --</option>';
+      if (ids.length > 1) teamB.value = ids[1];
+    }
+
+    function matchTeamByName(selectId, courtTeamName) {
+      if (!courtTeamName) return;
+      const select = document.getElementById(selectId);
+      const target = courtTeamName.trim().toLowerCase();
+      for (const opt of select.options) {
+        if (opt.textContent.trim().toLowerCase() === target) {
+          select.value = opt.value;
+          return;
+        }
+      }
+      // No exact name match in this bracket's team list — leave the
+      // selection as-is so it can be picked manually.
+    }
+
+    async function pullScoreFromCourt() {
+      const n = document.getElementById('pullCourtSelect').value;
+      const statusEl = document.getElementById('matchSaveStatus');
+      statusEl.style.color = '';
+      statusEl.textContent = 'Pulling score from Court ' + n + '…';
+
+      await ensureSignedIn();
+      try {
+        const snap = await fbDb.ref('boards/' + n).once('value');
+        const courtState = snap.val();
+        if (!courtState) {
+          statusEl.textContent = 'Court ' + n + ' has no data yet.';
+          return;
+        }
+
+        document.getElementById('matchScoreAInput').value = courtState.team1?.score ?? 0;
+        document.getElementById('matchScoreBInput').value = courtState.team2?.score ?? 0;
+        matchTeamByName('matchTeamASelect', courtState.team1?.name);
+        matchTeamByName('matchTeamBSelect', courtState.team2?.name);
+
+        statusEl.textContent = 'Pulled from Court ' + n + '. Double-check teams match, then Save.';
+      } catch (e) {
+        statusEl.style.color = '#ff6b6b';
+        statusEl.textContent = 'Could not pull score from Court ' + n + '.';
+      }
+    }
+
+    async function saveMatch() {
+      const statusEl = document.getElementById('matchSaveStatus');
+      if (!currentBracketId) {
+        statusEl.style.color = '#ff6b6b';
+        statusEl.textContent = 'Select a bracket first.';
+        return;
+      }
+
+      const teamAId = document.getElementById('matchTeamASelect').value;
+      const teamBId = document.getElementById('matchTeamBSelect').value;
+      const scoreA = Number(document.getElementById('matchScoreAInput').value) || 0;
+      const scoreB = Number(document.getElementById('matchScoreBInput').value) || 0;
+
+      if (!teamAId || !teamBId) {
+        statusEl.style.color = '#ff6b6b';
+        statusEl.textContent = 'Add at least two teams to this bracket first.';
+        return;
+      }
+      if (teamAId === teamBId) {
+        statusEl.style.color = '#ff6b6b';
+        statusEl.textContent = 'Team A and Team B must be different.';
+        return;
+      }
+
+      await ensureSignedIn();
+      const bracketRef = tournamentRef.child(currentBracketId);
+      const matchId = bracketRef.child('matches').push().key;
+      const matchData = {
+        teamAId, teamBId, scoreA, scoreB,
+        court: document.getElementById('pullCourtSelect').value,
+        timestamp: Date.now()
+      };
+
+      try {
+        await bracketRef.child('matches').child(matchId).set(matchData);
+        if (!bracketsCache[currentBracketId].matches) bracketsCache[currentBracketId].matches = {};
+        bracketsCache[currentBracketId].matches[matchId] = matchData;
+
+        statusEl.style.color = '';
+        statusEl.textContent = 'Match saved \u2713';
+        renderStandings();
+        renderMatchLog();
+      } catch (e) {
+        statusEl.style.color = '#ff6b6b';
+        statusEl.textContent = 'Could not save match (check database rules).';
+      }
+    }
+
+    function renderMatchLog() {
+      const bracket = bracketsCache[currentBracketId];
+      const list = document.getElementById('matchLogList');
+      if (!bracket || !bracket.matches || Object.keys(bracket.matches).length === 0) {
+        list.innerHTML = '<div style="color:var(--muted); font-size:12px;">No matches logged yet.</div>';
+        return;
+      }
+
+      const teams = bracket.teams || {};
+      const entries = Object.entries(bracket.matches)
+        .sort((a, b) => (b[1].timestamp || 0) - (a[1].timestamp || 0))
+        .slice(0, 15);
+
+      list.innerHTML = entries.map(([id, m]) => {
+        const nameA = teams[m.teamAId]?.name || '(removed team)';
+        const nameB = teams[m.teamBId]?.name || '(removed team)';
+        return `
+          <div class="match-log-item">
+            <span class="teams">${escapeHtml(nameA)} ${m.scoreA} &ndash; ${m.scoreB} ${escapeHtml(nameB)}</span>
+            <button class="delete-link" type="button" onclick="removeMatch('${id}')">delete</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function removeMatch(matchId) {
+      if (!currentBracketId) return;
+      if (!confirm('Delete this match? Standings will be recalculated.')) return;
+
+      await ensureSignedIn();
+      try {
+        await tournamentRef.child(currentBracketId).child('matches').child(matchId).remove();
+        delete bracketsCache[currentBracketId].matches[matchId];
+        renderStandings();
+        renderMatchLog();
+      } catch (e) {
+        alert('Could not delete match (check database rules).');
+      }
     }
 
     function hydrateFromState(saved) {
