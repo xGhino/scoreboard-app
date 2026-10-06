@@ -1261,7 +1261,8 @@
                 <th>Team</th>
                 <th class="num">W</th>
                 <th class="num">Played</th>
-                <th class="num">Points</th>
+                <th class="num">Total Score Points</th>
+                <th class="num">+/-</th>
                 <th></th>
               </tr>
             </thead>
@@ -1729,7 +1730,7 @@
       const stats = {};
 
       Object.keys(teams).forEach(id => {
-        stats[id] = { id, name: teams[id].name, wins: 0, played: 0, points: 0 };
+        stats[id] = { id, name: teams[id].name, wins: 0, played: 0, points: 0, diff: 0 };
       });
 
       Object.values(matches).forEach(m => {
@@ -1742,12 +1743,16 @@
         a.played++; b.played++;
         a.points += scoreA;
         b.points += scoreB;
+        a.diff += (scoreA - scoreB);
+        b.diff += (scoreB - scoreA);
         if (scoreA > scoreB) a.wins++;
         else if (scoreB > scoreA) b.wins++;
       });
 
+      // Ranked by Wins first, then Point Differential, then Total Score
+      // Points as a final tiebreaker — standard tournament ranking order.
       return Object.values(stats).sort((x, y) =>
-        y.wins - x.wins || y.points - x.points || x.name.localeCompare(y.name)
+        y.wins - x.wins || y.diff - x.diff || y.points - x.points || x.name.localeCompare(y.name)
       );
     }
 
@@ -1758,7 +1763,7 @@
 
       const standings = computeStandings(bracket);
       if (standings.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">No teams yet — add one above.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">No teams yet — add one above.</td></tr>';
         return;
       }
 
@@ -1768,6 +1773,7 @@
           <td class="num">${t.wins}</td>
           <td class="num">${t.played}</td>
           <td class="num">${t.points}</td>
+          <td class="num">${t.diff > 0 ? '+' + t.diff : t.diff}</td>
           <td><button class="delete-link" type="button" onclick="removeTeamFromBracket('${t.id}')">remove</button></td>
         </tr>
       `).join('');
